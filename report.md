@@ -40,13 +40,107 @@
 
 ##### 数据处理
 
+1. 数字特征
 
+   - 数据统计
+
+     ```python
+     statis={}
+     for feature in num_feature_list:
+         t=np.array(data_cal[feature])
+         statis[feature]=(t.min(),t.max())
+     ```
+
+   - 按最大值和最小值归一化
+
+     ```python
+     each_data["user"][feature]=(each_data["user"][feature]-statis[feature][0])/(statis[feature][1]-statis[feature][0])
+     ```
+
+2. 布尔特征
+
+   01整数化
+
+   ```python
+   each_data["user"][feature]=int(each_data["user"][feature])
+   ```
+
+3. 图片特征
+
+   - 首先根据url从网上下载图片
+
+     ```python
+     import requests
+     import json
+     import os
+     
+     def get_img(url,path):
+         if url:
+             ps=url.split(".")[-1]
+             ps=ps.lower()
+             if ps in ["jpg","png","jpeg","gif"]:
+                 print(url)
+                 response = requests.get(url)
+                 with open(path+"."+ps, 'wb') as fw:
+                     fw.write(response.content)
+     
+     def get_img2(url,path):
+         if url:
+             print(url)
+             response = requests.get(url)
+             with open(path+".jpg", 'wb') as fw:
+                 fw.write(response.content)
+     
+     raw_data_dir = './ref/raw/'
+     processed_data_dir = './ref/processed/'
+     for file_name in ['test']:
+         with open(os.path.join(raw_data_dir,file_name+".json"), 'r') as fr:
+             data = json.load(fr)
+             print(len(data))
+             for each_data in data:
+                 id_str=each_data["user"]["id_str"]
+                 if "profile_image_url" in each_data["user"]:
+                     profile_image_url=each_data["user"]["profile_image_url"]
+                     get_img(profile_image_url,os.path.join(processed_data_dir+"profile_image",id_str))
+                 if "profile_banner_url" in each_data["user"]:
+                     profile_banner_url=each_data["user"]["profile_banner_url"]
+                     get_img2(profile_banner_url,os.path.join(processed_data_dir+"profile_banner",id_str))
+     ```
+
+   - 然后进行图片读取和预处理
+
+     ```python
+     self.transform = transforms.Compose([
+                 transforms.Resize((224, 224)),  # ViT通常需要224x224的输入
+                 transforms.ToTensor(),  # 将PIL图像转换为张量
+                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # 归一化，这些值是预训练模型的训练数据的均值和标准差
+             ])
+     ```
+
+   - 用ViT(google/vit-base-patch16-224)来encode图片
+
+   
 
 ##### 模型结构
+
+MLP:
+
+```python
+for i in range(layer_num):
+	input_dim=2*hidden_dim+18 if i==0 else hidden_dim
+	output_dim=hidden_dim if i!=layer_num-1 else class_num
+	mlp.append(nn.Linear(input_dim, output_dim))
+	if i!=layer_num-1:
+	mlp.append(nn.ReLU())
+```
 
 
 
 ##### 损失函数
+
+```python
+loss_function = nn.BCELoss(reduction='mean')
+```
 
 
 

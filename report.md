@@ -1,6 +1,6 @@
 # 实验报告
 
-一周乐园队：廖佳怡（SA23006058），陈柯舟（学号？），郑善乐（学号？）
+一周乐园队：廖佳怡（SA23006058），陈柯舟（SA23006018），郑善乐（学号？）
 
 
 
@@ -161,11 +161,57 @@ loss_function = nn.BCELoss(reduction='mean')
 
 
 
-### 二、方案二（柯舟）
+### 二、方案二（文本数据处理，Catboost）
 
-#TODO
+#### 1. BERT处理文本特征（description）的尝试
 
+由于比赛数据中存在不同结构的数据，这其中包含了文本（description），因此首先我们判断文本的语义特征能否在机器人检测中起作用。以用户特征中的description为输入，选取预训练的BERT-base编码，采用BCE loss作为损失函数。
 
+训练过程中发现以依靠文本语义不能时使验证集上的F1上升，如下图所示：
+
+<img src="figure\F1.png" style="zoom:72%;" />
+
+可以看出无法使用文本语义检测账号是否为机器人。原因可能有如下三点：
+
+1. 账号的description是多语言的，其中包含英语，阿拉伯语，韩语等等，BERT作为英文单语言预训练模型无法正确理解不同语言的信息。
+2. 很多账号的description不存在，使得训练数据有一定缺失。
+3. description的语义本身与账号是否为机器人没有相关性。
+
+因此在后续的模型设计中，我们不再尝试提取description中的语义，而是把账号是否存在description作为输入。
+
+#### 2. Catboost
+
+###### （Catboost 中的数据处理代码基于郑善乐XGBoost）
+
+##### 模型选择：
+
+使用集成学习算法Catboost分类器。Catboost是以对称决策树（oblivious trees）为基学习器实现的参数较少、支持类别型变量和高准确性的GBDT框架。
+
+```python
+import catboost as cb
+classfier = cb.CatBoostClassifier(**params)
+```
+
+##### 特征处理：
+
+数字特征不变，布尔特征用1，0表示，description分别用1，0代表是否有内容。
+
+##### 参数调整：
+
+对catboost 的'learning_rate'（学习率），'max_depth'（最大树深度），'boosting_type'（boost类型）进行调整。
+
+```python
+params = {
+    'loss_function': 'Logloss',
+    'learning_rate': 0.01,
+    'max_depth': 6,
+    'boosting_type':'Ordered',
+}
+```
+
+##### 评估指标
+
+验证集上用F1 score进行模型选择。
 
 ### 三、方案三（善乐）
 
@@ -178,7 +224,7 @@ loss_function = nn.BCELoss(reduction='mean')
 ***验证集***上得分：
 
 - 方案一：0.76
-- 方案二：
+- 方案二：0.772
 - 方案三：
 
 ***测试集***上得分：0.816291869906718

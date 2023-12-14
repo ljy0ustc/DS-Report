@@ -189,7 +189,7 @@ loss_function = nn.BCELoss(reduction='mean')
 
 ## 代码整理
 
-
+code文件夹下
 
 
 
@@ -213,3 +213,6 @@ loss_function = nn.BCELoss(reduction='mean')
 
 ## 团队分工
 
+- 方案一：廖佳怡
+- 方案二：陈柯舟
+- 方案三：郑善乐
